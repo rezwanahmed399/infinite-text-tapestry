@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tapestria — Text to Infinite Scrollable Image Canvas</title>
+  <meta name="description" content="যেকোনো টেক্সটকে সাধারণ চারকোনা ছবিতে নয়, বরং একটি অন্তহীন অবিচ্ছিন্ন স্ক্রলযোগ্য জীবন্ত চিত্রপটে রূপান্তর করার উদ্ভাবনী প্ল্যাটফর্ম।">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Ambient glow background -->
+  <div class="ambient-glow glow-top"></div>
+  <div class="ambient-glow glow-bottom"></div>
+
+  <!-- Top Navigation Bar -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-symbol">
+        <svg viewBox="0 0 32 32" fill="none">
+          <circle cx="16" cy="16" r="14" stroke="url(#brandGrad)" stroke-width="2"/>
+          <path d="M16 6V26M6 16H26M10 10L22 22M22 10L10 22" stroke="url(#brandGrad)" stroke-width="1.5" stroke-linecap="round"/>
+          <defs>
+            <linearGradient id="brandGrad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#00f2fe"/>
+              <stop offset="0.5" stop-color="#4facfe"/>
+              <stop offset="1" stop-color="#9d4edd"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <div class="brand-info">
+        <h1 class="brand-title">TAPESTRIA <span class="badge">PROTOTYPE</span></h1>
+        <p class="brand-tagline">Text-to-Infinite Scrollable Image Engine • বর্ণচিত্র</p>
+      </div>
+    </div>
+
+    <!-- Live Status / Metrics -->
+    <div class="header-metrics">
+      <div class="metric-pill">
+        <span class="metric-label">টেক্সট দৈর্ঘ্য:</span>
+        <span class="metric-val" id="metricWordCount">০ শব্দ</span>
+      </div>
+      <div class="metric-pill">
+        <span class="metric-label">ছবির স্ক্রল গভীরতা:</span>
+        <span class="metric-val highlight" id="metricCanvasHeight">০ px</span>
+      </div>
+      <div class="metric-pill">
+        <span class="metric-label">দৃশ্যপট স্তর:</span>
+        <span class="metric-val" id="metricEpochs">০ টি চ্যাপ্টার</span>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="header-actions">
+      <button id="btnTechInfo" class="btn btn-glass" title="WebGL vs SVG vs Canvas তুলনা দেখুন">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 16v-4M12 8h.01"/>
+        </svg>
+        <span>WebGL ও SVG তুলনা</span>
+      </button>
+      <button id="btnOpenInput" class="btn btn-primary" title="নতুন টেক্সট লিখে স্ক্রলেবল ছবি বানান">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+        </svg>
+        <span>টেক্সট ইনপুট দিন</span>
+      </button>
+      <button id="btnExport" class="btn btn-glass" title="পুরো স্ক্রল চিত্রপটটি ছবি হিসেবে ডাউনলোড করুন">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+        </svg>
+        <span>ডাউনলোড</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Viewport containing the Infinite Scrollable Tapestry -->
+  <main class="tapestry-viewport-container" id="viewportContainer">
+    <!-- The physical scroll container whose height scales dynamically based on text volume -->
+    <div class="scroll-track" id="scrollTrack">
+      <!-- Fixed high-performance Canvas for Rendering the Living Tapestry -->
+      <canvas id="tapestryCanvas" class="tapestry-canvas"></canvas>
+
+      <!-- Floating Waypoints & Synchronized Narrative Markers Layer -->
+      <div id="narrativeWaypointsLayer" class="narrative-waypoints-layer"></div>
+    </div>
+
+    <!-- Cinematic Scroll Indicator & Guidance -->
+    <div class="scroll-guidance" id="scrollGuidance">
+      <div class="mouse-icon">
+        <div class="mouse-wheel"></div>
+      </div>
+      <span>নিচে স্ক্রল করে চিত্রপটটি উন্মোচন করুন</span>
+    </div>
+
+    <!-- Floating Minimap Navigation HUD (Right Side) -->
+    <aside class="minimap-panel" id="minimapPanel">
+      <div class="minimap-header">
+        <span class="minimap-title">STORY MAP</span>
+        <span class="minimap-progress" id="minimapProgress">0%</span>
+      </div>
+      <div class="minimap-track" id="minimapTrack">
+        <div class="minimap-strip" id="minimapStrip"></div>
+        <div class="minimap-viewport-indicator" id="minimapIndicator"></div>
+      </div>
+      <div class="minimap-footer">
+        <button id="btnScrollTop" class="minimap-btn" title="শুরুতে ফিরুন">↑ শীর্ষ</button>
+      </div>
+    </aside>
+
+    <!-- Bottom HUD Floating Player & Theme Bar -->
+    <div class="floating-hud">
+      <!-- Theme Switcher -->
+      <div class="theme-selector-group">
+        <span class="hud-label">থিম শৈলী:</span>
+        <div class="theme-chips" id="themeChips">
+          <button class="theme-chip active" data-theme="cyberpunk">
+            <span class="chip-dot" style="background:#00f2fe;"></span>
+            Cyberpunk
+          </button>
+          <button class="theme-chip" data-theme="fantasy">
+            <span class="chip-dot" style="background:#52b788;"></span>
+            Mystic Forest
+          </button>
+          <button class="theme-chip" data-theme="cosmos">
+            <span class="chip-dot" style="background:#9d4edd;"></span>
+            Deep Cosmos
+          </button>
+          <button class="theme-chip" data-theme="papyrus">
+            <span class="chip-dot" style="background:#f4a261;"></span>
+            Ancient Myth
+          </button>
+          <button class="theme-chip" data-theme="abyss">
+            <span class="chip-dot" style="background:#0077b6;"></span>
+            Ocean Abyss
+          </button>
+        </div>
+      </div>
+
+      <div class="hud-divider"></div>
+
+      <!-- Playback & Audio Controls -->
+      <div class="playback-controls">
+        <button id="btnAutoplay" class="hud-btn" title="স্বয়ংক্রিয় স্ক্রল (Cinematic Auto-Scroll)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" id="playIcon">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+          <span id="playText">অটোপ্লে</span>
+        </button>
+
+        <div class="speed-selector">
+          <button class="speed-btn active" data-speed="1">1x</button>
+          <button class="speed-btn" data-speed="2">2x</button>
+          <button class="speed-btn" data-speed="3">3x</button>
+        </div>
+
+        <button id="btnAudioToggle" class="hud-btn hud-btn-icon" title="অ্যাম্বিয়েন্ট সাউন্ড চালু করুন">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="soundIcon">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+            <line x1="23" y1="9" x2="17" y2="15"/>
+            <line x1="17" y1="9" x2="23" y2="15"/>
+          </svg>
+        </button>
+
+        <button id="btnFullscreen" class="hud-btn hud-btn-icon" title="ফুলস্ক্রিন মোড">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Text Input Modal Drawer -->
+  <div class="modal-overlay" id="inputModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title">টেক্সট দিয়ে স্ক্রলেবল চিত্রপট তৈরি করুন</h2>
+          <p class="modal-subtitle">আপনার লেখার দৈর্ঘ্য অনুযায়ী ছবির স্ক্রল পরিধি স্বয়ংক্রিয়ভাবে তৈরি হবে।</p>
+        </div>
+        <button class="modal-close-btn" id="btnCloseModal">&times;</button>
+      </div>
+
+      <div class="preset-section">
+        <span class="preset-label">উদাহরণ স্টোরি প্রিসেট নির্বাচন করুন:</span>
+        <div class="preset-chips">
+          <button class="preset-chip" data-preset="cyber-story">🚀 সাইবারপাঙ্ক শহরের অভিযান (মাঝারি গল্প)</button>
+          <button class="preset-chip" data-preset="mystic-epic">🌿 মায়াবী বনের প্রাচীন মহাকাব্য (বিশাল লম্বা টেক্সট)</button>
+          <button class="preset-chip" data-preset="cosmic-poem">🌌 ছায়াপথের জাদুকরী কবিতা (সংক্ষিপ্ত টেক্সট)</button>
+          <button class="preset-chip" data-preset="papyrus-tale">🏛️ ফেরাউন ও সোনালী বালুর উপাখ্যান (ঐতিহাসিক)</button>
+        </div>
+      </div>
+
+      <div class="editor-area">
+        <label for="textInput" class="editor-label">আপনার টেক্সট বা গল্প লিখুন (বাংলা বা ইংরেজি):</label>
+        <textarea id="textInput" rows="9" placeholder="এখানে আপনার গল্প, কবিতা বা কোনো চিন্তাভাবনা লিখুন... প্রতিটি নতুন প্যারাগ্রাফ ছবির এক একটি নতুন দৃশ্য উন্মোচন করবে!"></textarea>
+      </div>
+
+      <div class="modal-meta-bar">
+        <div class="live-estimation">
+          <span>শব্দ: <b id="liveWords">0</b></span> • 
+          <span>অনুমানিত স্ক্রল দৈর্ঘ্য: <b id="liveDepth">0 px</b></span> • 
+          <span>সিন সংখ্যা: <b id="liveScenes">0</b></span>
+        </div>
+        <div class="modal-buttons">
+          <button class="btn btn-glass" id="btnClearText">মুছে ফেলুন</button>
+          <button class="btn btn-primary" id="btnGenerateTapestry">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+            </svg>
+            চিত্রপট রূপান্তর করুন
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Technology Comparison Modal (WebGL vs SVG vs Canvas) -->
+  <div class="modal-overlay" id="techModal">
+    <div class="modal-card tech-modal-card">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title">ইনফিনিট স্ক্রল প্রযুক্তির তুলনা: WebGL vs SVG vs Canvas</h2>
+          <p class="modal-subtitle">আপনার প্রশ্নে উল্লেখিত ফরম্যাটগুলো কীভাবে কাজ করে এবং তাদের সুবিধা-অসুবিধা:</p>
+        </div>
+        <button class="modal-close-btn" id="btnCloseTechModal">&times;</button>
+      </div>
+
+      <div class="tech-grid">
+        <!-- WebGL Card -->
+        <div class="tech-item highlight-card">
+          <div class="tech-badge">GPU Powered</div>
+          <h3 class="tech-name">🎮 WebGL (Web Graphics Library)</h3>
+          <p class="tech-desc">সরাসরি গ্রাফিক্স কার্ডের (GPU) সাহায্যে 3D ও 2D পিক্সেল শেডার (GLSL Shaders) রেন্ডার করে।</p>
+          <ul class="tech-features">
+            <li><b style="color:var(--primary-cyan);">ইনফিনিট স্ক্রল সমর্থন:</b> 🌟 অসাধারণ (Best in Class)</li>
+            <li><b>শক্তি:</b> কোটি কোটি পার্টিকল, রিয়েল-টাইম পানি/আলোর রিফ্লেকশন, স্মুথ ৬০-১২০ FPS।</li>
+            <li><b>ব্যবহার:</b> হেভি 3D স্পেস জার্নি, রেইমার্চিং ও জটিল ফ্লুইড সিমুলেশন।</li>
+          </ul>
+        </div>
+
+        <!-- SVG Card -->
+        <div class="tech-item">
+          <div class="tech-badge">Vector Based</div>
+          <h3 class="tech-name">📐 SVG (Scalable Vector Graphics)</h3>
+          <p class="tech-desc">গাণিতিক ভেক্টর লাইন ও কো-অর্ডিনেট দিয়ে ছবি আঁকে, কোনো পিক্সেল নেই।</p>
+          <ul class="tech-features">
+            <li><b style="color:var(--accent-gold);">ইনফিনিট স্ক্রল সমর্থন:</b> ⚡ চমৎকার (তবে সীমাবদ্ধতা আছে)</li>
+            <li><b>শক্তি:</b> যত স্ক্রল বা জুমই করুন, কখনো ফাটবে না (Infinite Sharpness)।</li>
+            <li><b>সীমাবদ্ধতা:</b> খুব বেশি জটিল অবজেক্ট বা কোটি উপাদান থাকলে ব্রাউজারের DOM স্লো হয়ে যেতে পারে।</li>
+          </ul>
+        </div>
+
+        <!-- Canvas 2D Card -->
+        <div class="tech-item">
+          <div class="tech-badge">High Performance</div>
+          <h3 class="tech-name">🎨 HTML5 Canvas 2D (বর্তমান ইঞ্জিন)</h3>
+          <p class="tech-desc">ব্রাউজারের বিটম্যাপ ক্যানভাস যেখানে কোড দিয়ে সরাসরি পিক্সেল রেন্ডার হয়।</p>
+          <ul class="tech-features">
+            <li><b style="color:var(--accent-emerald);">ইনফিনিট স্ক্রল সমর্থন:</b> 🚀 অত্যন্ত দ্রুত ও নির্ভরযোগ্য</li>
+            <li><b>শক্তি:</b> মেমরি সাশ্রয়ী, সব মোবাইল ও ডেস্কটপ ডিভাইসে সুপার ফাস্ট এবং কোনো অতিরিক্ত লোড ছাড়াই প্যারাল্যাক্স তৈরি করে।</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="modal-buttons modal-actions-right">
+        <button class="btn btn-primary" id="btnCloseTechModalBtn">বুঝেছি</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Snapshot Render Overlay Modal -->
+  <div class="modal-overlay" id="exportModal">
+    <div class="modal-card export-card">
+      <div class="modal-header">
+        <h2 class="modal-title">চিত্রপট এক্সপোর্ট ও ডাউনলোড</h2>
+        <button class="modal-close-btn" id="btnCloseExportModal">&times;</button>
+      </div>
+      <p class="modal-subtitle">আপনার তৈরি অবিচ্ছিন্ন দীর্ঘ চিত্রপটটি তৈরি হয়েছে:</p>
+      <div class="export-preview-box">
+        <canvas id="exportCanvasPreview"></canvas>
+      </div>
+      <div class="modal-buttons modal-actions-right">
+        <button class="btn btn-glass" id="btnCloseExport">বন্ধ করুন</button>
+        <a id="btnDownloadImage" class="btn btn-primary" download="infinite-tapestry.png">
+          PNG ইমেজ সংরক্ষণ করুন
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
